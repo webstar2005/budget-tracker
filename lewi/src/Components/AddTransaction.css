@@ -46,9 +46,8 @@ button:active{
 }
 @media (max-width: 600px){
     .button{
-        flex-direction: column;
-        align-items: center;
-        margin-top: 20px;
-        width: auto;
+        position: static;
+        margin-top: 1rem;
+        justify-content: center;
     }
 }
