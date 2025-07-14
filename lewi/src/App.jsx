@@ -51,6 +51,15 @@ function App() {
       setTransactionsLoading(true);
       setTransactionError(null);
       const data = await getTransactions(user.uid);
+      
+      // Debug: Check transaction structure
+      console.log('Loaded transactions:', data);
+      if (data.length > 0) {
+        console.log('First transaction:', data[0]);
+        console.log('First transaction ID:', data[0].id);
+        console.log('First transaction ID type:', typeof data[0].id);
+      }
+      
       setTransactions(data);
       console.log('Loaded transactions:', data.length);
     } catch (err) {
@@ -90,26 +99,61 @@ function App() {
     }
   };
 
+  // Enhanced delete function with confirmation
   const deleteTransaction = async (transactionId) => {
     console.log('=== DEBUG: Deleting transaction ===');
     console.log('Transaction ID:', transactionId);
+    console.log('Transaction ID type:', typeof transactionId);
+    console.log('Current transactions:', transactions);
     
     if (!user) {
       setTransactionError('You must be logged in to delete transactions');
       return;
     }
 
+    // Validate transaction ID
+    if (!transactionId) {
+      setTransactionError('Invalid transaction ID');
+      console.error('Transaction ID is missing or invalid');
+      return;
+    }
+
+    // Convert to string to ensure proper format
+    const stringTransactionId = String(transactionId);
+    console.log('String transaction ID:', stringTransactionId);
+
+    // Check if transaction exists in current state
+    const transactionExists = transactions.find(tx => tx.id === stringTransactionId);
+    console.log('Transaction exists in state:', transactionExists);
+
+    // Optional: Add confirmation dialog
+    const confirmDelete = window.confirm('Are you sure you want to delete this transaction?');
+    if (!confirmDelete) {
+      console.log('User cancelled deletion');
+      return;
+    }
+
     try {
       setTransactionError(null);
-      await deleteTransactionFromDB(transactionId);
+      console.log('Calling deleteTransactionFromDB with:', stringTransactionId);
       
-      // FIX: Use prev state instead of current transactions
-      setTransactions(prev => prev.filter((tx) => tx.id == transactionId));
+      // Delete from database - use string ID
+      await deleteTransactionFromDB(stringTransactionId);
+      console.log('Database deletion successful');
+      
+      // Update local state by filtering out the deleted transaction
+      setTransactions(prev => {
+        const filtered = prev.filter((tx) => String(tx.id) === stringTransactionId ? false : true);
+        console.log('Filtered transactions:', filtered);
+        console.log('Original count:', prev.length, 'New count:', filtered.length);
+        return filtered;
+      });
       
       console.log('Transaction deleted successfully');
     } catch (err) {
       setTransactionError('Failed to delete transaction: ' + err.message);
       console.error('Error deleting transaction:', err);
+      console.error('Full error object:', err);
     }
   };
 

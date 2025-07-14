@@ -90,13 +90,29 @@ export const updateTransaction = async (transactionId, updates) => {
 export const deleteTransaction = async (transactionId) => {
   try {
     console.log('Deleting transaction:', transactionId);
+    console.log('Transaction ID type:', typeof transactionId);
     
-    await deleteDoc(doc(db, 'transactions', transactionId));
+    // Validate and convert transactionId to string
+    if (!transactionId) {
+      throw new Error('Transaction ID is required');
+    }
+    
+    const stringTransactionId = String(transactionId).trim();
+    
+    if (!stringTransactionId) {
+      throw new Error('Invalid transaction ID');
+    }
+    
+    console.log('Using string transaction ID:', stringTransactionId);
+    
+    await deleteDoc(doc(db, 'transactions', stringTransactionId));
     console.log('Transaction deleted successfully');
     
-    return transactionId;
+    return stringTransactionId;
   } catch (error) {
     console.error('Error deleting transaction:', error);
+    console.error('Original transaction ID:', transactionId);
+    console.error('Transaction ID type:', typeof transactionId);
     throw error;
   }
 };
