@@ -44,7 +44,7 @@ button:active{
     box-shadow: none;
     transform: translateY(0);
 }
-@media (max-width: 768px){
+@media (max-width: 600px){
     .button{
         flex-direction: column;
         align-items: center;
