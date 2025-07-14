@@ -1,0 +1,55 @@
+.form-container{
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 100vw;
+    background-color: rgba(0, 0, 0, 0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+.form-content{
+    font-family: "Segoe UI",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+}
+form label{
+    display: block;
+    margin-bottom: 1rem;
+    font-weight: bold;
+    font-family: "Segoe UI",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+}
+form input,
+form select{
+    display: block;
+    width: 100%;
+    padding: 0.5rem;
+    margin-top: 0.3rem;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+}
+.buttons{
+    display: flex;
+    margin-bottom: 1rem;
+    justify-content: space-between;
+}
+.buttons button{
+    padding: 0.6rem 1rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.buttons button:first-child{
+    background-color: #28a745;
+    color: white;
+}
+.buttons button:last-child{
+    background-color: #dc3545;
+    color: white;
+}

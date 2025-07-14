@@ -1,0 +1,30 @@
+h1{
+    color:#4682a9;
+    margin-bottom: 2px;
+}
+.header-container{
+    padding-left: 10px;
+    justify-items: center;
+}
+p{
+    margin-top: 1px;
+}
+@media (min-width: 768px){
+    .header-container h1{
+        font-size: 2.5 rem;
+    }
+    .header-container p{
+        font-size: 1.125rem;
+    }
+}
+@media (min-width: 1024px){
+    .header-container{
+        padding: 3rem;
+    }
+    .header-container h1{
+        font-size: 3rem;
+    }
+    .header-container p{
+        font-size: 1.25rem;
+    }
+}

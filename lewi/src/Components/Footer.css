@@ -1,0 +1,87 @@
+.container{
+    justify-items: center;
+    align-items: center;
+    margin-top: 35px;
+    border: 1px solid #ccc;
+    padding: 20px;
+    border-radius: 20px;
+    transition: box-shadow 0.3 ease;
+}
+.container:hover{
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+}
+.container img{
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border: 3px solid #f6f6f6;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    color: grey;
+    padding: 5px;
+    transition: box-shadow 0.3s ease;
+}
+.container img{
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+}
+.container p{
+    margin-top: 15px;
+    font-family: "Segoe UI",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+    color: black;
+}
+.transaction-list{
+    list-style-type: none;
+    padding: 0;
+    margin-top: 20px;
+}
+.transaction-item{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f7f7f7;
+    border-left: 5px solid transparent;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+.transaction-item.income{
+    border-left-color: #28a745;
+    background-color: #e6ffed;
+}
+.transaction-item.expense{
+    border-left-color: #dc3545;
+    background-color: #ffecec;
+}
+.transaction-info{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 0.95rem;
+    color: #333;
+}
+.transaction-amount{
+    font-weight: bold;
+    margin-right: 9px;
+}
+.delete-btn{
+    background-color: #ff4d4f;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+.delete-btn:hover{
+    background-color: #d9363e;
+}
+.transaction-item{
+    opacity: 0;
+    animation: fadeIn 0.4s forwards;
+}
+@keyframes fadeIn{
+    to{
+        opacity: 1;
+    }
+}

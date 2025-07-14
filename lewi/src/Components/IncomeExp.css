@@ -1,0 +1,88 @@
+.cards-container{
+    display: grid;
+    justify-content: center;
+    grid-template-columns: repeat(3,1fr);
+    gap: 20px;
+}
+.card1{
+    border: 1px solid #ccc;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
+    font-family: "Segoe UI",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+    position: relative;
+    transition: box-shadow 0.3s ease;
+}
+.card1:hover{
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+}
+.card1 img{
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    border: 1px solid #f6f6f6;
+    background-color: #adeed9;
+    padding: 5px;
+    position: absolute;
+    top: 37px;
+    right: 30px;
+}
+.kes1{
+    color: #14746f;
+    font-size: 30px;
+}
+.card2{
+    border: 1px solid #ccc;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
+    font-family: "Segoe UI",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+    position: relative;
+    transition: box-shadow 0.3 ease;
+}
+.card2:hover{
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+}
+.card2 img{
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    border: 1px solid #f6f6f6;
+    background-color: #ff8fa3;
+    padding: 5px;
+    position: absolute;
+    top: 37px;
+    right: 30px;
+}
+.kes2{
+    color: #ba181b;
+    font-size: 30px;
+}
+.card3{
+    border: 1px solid #ccc;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
+    font-family: "Segoe UI",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+    position: relative;
+    transition: box-shadow 0.3s ease;
+}
+.card3:hover{
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+}
+.card3 span{
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    border: 1px solid #f6f6f6;
+    padding: 5px;
+    background-color: #adeed9;
+    position: absolute;
+    top: 37px;
+    right: 30px;
+}
+.kes3{
+    color: #14746f;
+    margin-top: 17px;
+    font-size: 30px;
+}
