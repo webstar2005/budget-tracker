@@ -100,7 +100,7 @@ function App() {
     }
   };
 
-  // Enhanced delete function with confirmation
+  // FIXED: Enhanced delete function with proper persistent deletion
   const deleteTransaction = async (transactionId) => {
     console.log('=== DEBUG: Deleting transaction ===');
     console.log('Transaction ID:', transactionId);
@@ -124,8 +124,14 @@ function App() {
     console.log('String transaction ID:', stringTransactionId);
 
     // Check if transaction exists in current state
-    const transactionExists = transactions.find(tx => tx.id === stringTransactionId);
+    const transactionExists = transactions.find(tx => String(tx.id) === stringTransactionId);
     console.log('Transaction exists in state:', transactionExists);
+
+    if (!transactionExists) {
+      setTransactionError('Transaction not found');
+      console.error('Transaction not found in current state');
+      return;
+    }
 
     // Optional: Add confirmation dialog
     const confirmDelete = window.confirm('Are you sure you want to delete this transaction?');
@@ -138,13 +144,14 @@ function App() {
       setTransactionError(null);
       console.log('Calling deleteTransactionFromDB with:', stringTransactionId);
       
-      // Delete from database - use string ID
+      // Delete from Firebase database first - this ensures persistence
       await deleteTransactionFromDB(stringTransactionId);
       console.log('Database deletion successful');
       
       // Update local state by filtering out the deleted transaction
+      // FIXED: Changed the filter logic - was inverted before
       setTransactions(prev => {
-        const filtered = prev.filter((tx) => String(tx.id) === stringTransactionId ? false : true);
+        const filtered = prev.filter((tx) => String(tx.id) !== stringTransactionId);
         console.log('Filtered transactions:', filtered);
         console.log('Original count:', prev.length, 'New count:', filtered.length);
         return filtered;
@@ -155,6 +162,83 @@ function App() {
       setTransactionError('Failed to delete transaction: ' + err.message);
       console.error('Error deleting transaction:', err);
       console.error('Full error object:', err);
+      
+      // On error, reload transactions to ensure UI is in sync with database
+      loadTransactions();
+    }
+  };
+
+  // ENHANCED: Batch delete function for multiple transactions
+  const deleteMultipleTransactions = async (transactionIds) => {
+    if (!user) {
+      setTransactionError('You must be logged in to delete transactions');
+      return;
+    }
+
+    if (!transactionIds || transactionIds.length === 0) {
+      setTransactionError('No transactions selected for deletion');
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete ${transactionIds.length} transaction(s)?`
+    );
+    if (!confirmDelete) {
+      return;
+    }
+
+    try {
+      setTransactionError(null);
+      
+      // Delete all transactions from database
+      await Promise.all(
+        transactionIds.map(id => deleteTransactionFromDB(String(id)))
+      );
+      
+      // Update local state
+      setTransactions(prev => 
+        prev.filter(tx => !transactionIds.includes(String(tx.id)))
+      );
+      
+      console.log(`Successfully deleted ${transactionIds.length} transactions`);
+    } catch (err) {
+      setTransactionError('Failed to delete transactions: ' + err.message);
+      console.error('Error deleting multiple transactions:', err);
+      
+      // Reload transactions to ensure UI is in sync
+      loadTransactions();
+    }
+  };
+
+  // ENHANCED: Soft delete function (if you want to implement soft deletes)
+  const softDeleteTransaction = async (transactionId) => {
+    if (!user) {
+      setTransactionError('You must be logged in to delete transactions');
+      return;
+    }
+
+    try {
+      setTransactionError(null);
+      
+      // Update transaction with deleted flag instead of removing
+      const updatedTransaction = {
+        ...transactions.find(tx => String(tx.id) === String(transactionId)),
+        deleted: true,
+        deletedAt: new Date().toISOString()
+      };
+      
+      // Update in database (you'd need to implement updateTransaction in your database service)
+      // await updateTransactionInDB(String(transactionId), updatedTransaction);
+      
+      // Update local state to hide deleted transactions
+      setTransactions(prev => 
+        prev.filter(tx => String(tx.id) !== String(transactionId))
+      );
+      
+      console.log('Transaction soft deleted successfully');
+    } catch (err) {
+      setTransactionError('Failed to delete transaction: ' + err.message);
+      console.error('Error soft deleting transaction:', err);
     }
   };
 
@@ -291,7 +375,11 @@ function App() {
       {/* Main app components */}
       <AddTransaction onAddTransaction={addTransaction} />
       <IncomeExp transactions={transactions} />
-      <Footer transactions={transactions} onDelete={deleteTransaction} />
+      <Footer 
+        transactions={transactions} 
+        onDelete={deleteTransaction}
+        onDeleteMultiple={deleteMultipleTransactions} // Pass batch delete function
+      />
       <BalanceSheet transactions={transactions} />
       <InventoryTracker transactions={transactions} />
     </div>

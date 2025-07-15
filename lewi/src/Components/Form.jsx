@@ -12,11 +12,10 @@ const Form = ({onClose, onSubmit}) => {
     
     // New state variables for enhanced functionality
     const[weight,setWeight] = useState("");
-    const[quantity,setQuantity] = useState("");
-    const[pricePerUnit,setPricePerUnit] = useState("");
+    const[pricePerKg,setPricePerKg] = useState("");
     const[isWeightBased,setIsWeightBased] = useState(false);
 
-    // Categories that require weight/quantity tracking
+    // Categories that require weight tracking
     const weightBasedCategories = ["Maize bran", "Wheat bran", "Maize germ", "Cob dust"];
     
     // Handle category change to show/hide weight fields
@@ -27,40 +26,31 @@ const Form = ({onClose, onSubmit}) => {
         
         // Auto-set price for cob dust
         if (selectedCategory === "Cob dust") {
-            setPricePerUnit("5");
+            setPricePerKg("5");
         }
         
-        // Reset weight/quantity fields when switching categories
+        // Reset weight/price fields when switching categories
         if (!weightBasedCategories.includes(selectedCategory)) {
             setWeight("");
-            setQuantity("");
-            setPricePerUnit("");
+            setPricePerKg("");
         } else if (selectedCategory !== "Cob dust") {
-            setPricePerUnit("");
+            setPricePerKg("");
         }
     };
 
-    // Calculate total amount based on quantity and price per unit
-    const calculateAmount = () => {
-        if (quantity && pricePerUnit) {
-            const calculatedAmount = parseFloat(quantity) * parseFloat(pricePerUnit);
-            setAmount(calculatedAmount.toFixed(2));
-        }
-    };
-
-    // Handle quantity or price change to auto-calculate amount
-    const handleQuantityChange = (e) => {
-        setQuantity(e.target.value);
-        if (e.target.value && pricePerUnit) {
-            const calculatedAmount = parseFloat(e.target.value) * parseFloat(pricePerUnit);
+    // Handle weight change to auto-calculate amount
+    const handleWeightChange = (e) => {
+        setWeight(e.target.value);
+        if (e.target.value && pricePerKg) {
+            const calculatedAmount = parseFloat(e.target.value) * parseFloat(pricePerKg);
             setAmount(calculatedAmount.toFixed(2));
         }
     };
 
     const handlePriceChange = (e) => {
-        setPricePerUnit(e.target.value);
-        if (e.target.value && quantity) {
-            const calculatedAmount = parseFloat(quantity) * parseFloat(e.target.value);
+        setPricePerKg(e.target.value);
+        if (e.target.value && weight) {
+            const calculatedAmount = parseFloat(weight) * parseFloat(e.target.value);
             setAmount(calculatedAmount.toFixed(2));
         }
     };
@@ -76,10 +66,8 @@ const Form = ({onClose, onSubmit}) => {
             date,
             // Include new fields if they apply
             ...(isWeightBased && {
-                weightPerBag: weight ? parseFloat(weight) : null,
-                quantity: quantity ? parseFloat(quantity) : null,
-                pricePerUnit: pricePerUnit ? parseFloat(pricePerUnit) : null,
-                totalWeight: (weight && quantity) ? parseFloat(weight) * parseFloat(quantity) : null
+                weightInKg: weight ? parseFloat(weight) : null,
+                pricePerKg: pricePerKg ? parseFloat(pricePerKg) : null
             })
         };
         onSubmit(newTransaction);
@@ -124,39 +112,27 @@ const Form = ({onClose, onSubmit}) => {
                     </select>
                 </label>
 
-                {/* Show weight and quantity fields for weight-based categories */}
+                {/* Show weight fields for weight-based categories */}
                 {isWeightBased && (
                     <>
                         <label>
-                            {category === "Cob dust" ? "Quantity (kg):" : "Quantity (bags):"}
+                            Weight (kg):
                             <input 
                                 type='number' 
-                                value={quantity} 
-                                onChange={handleQuantityChange} 
-                                placeholder={category === "Cob dust" ? "Weight in kg" : "Number of bags"}
+                                step="0.01"
+                                value={weight} 
+                                onChange={handleWeightChange} 
+                                placeholder="Weight in kg"
                                 required
                             />
                         </label>
                         
-                        {category !== "Cob dust" && (
-                            <label>
-                                Weight per bag (kg):
-                                <input 
-                                    type='number' 
-                                    step="0.01"
-                                    value={weight} 
-                                    onChange={(e) => setWeight(e.target.value)} 
-                                    placeholder='Weight per bag in kg'
-                                />
-                            </label>
-                        )}
-                        
                         <label>
-                            {category === "Cob dust" ? "Price per kg (KES):" : "Price per bag (KES):"}
+                            Price per kg (KES):
                             <input 
                                 type='number' 
                                 step="0.01"
-                                value={pricePerUnit} 
+                                value={pricePerKg} 
                                 onChange={handlePriceChange} 
                                 placeholder='KES 0.00'
                                 required
@@ -175,7 +151,7 @@ const Form = ({onClose, onSubmit}) => {
                         onChange={(e) => setAmount(e.target.value)} 
                         placeholder='KES 0.00' 
                         required
-                        readOnly={isWeightBased && quantity && pricePerUnit}
+                        readOnly={isWeightBased && weight && pricePerKg}
                     />
                 </label>
 

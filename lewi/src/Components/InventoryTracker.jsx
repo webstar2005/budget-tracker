@@ -2,31 +2,35 @@ import React, { useState, useEffect } from 'react';
 
 const InventoryTracker = ({ transactions = [] }) => {
   const [initialStock, setInitialStock] = useState({
-    'Maize bran': { quantity: 0, weightPerBag: 90 },
-    'Wheat bran': { quantity: 0, weightPerBag: 50 },
-    'Maize germ': { quantity: 0, weightPerBag: 50 },
-    'Cob dust': { quantity: 0, weightPerBag: 1 } // For cob dust, quantity is in kg
+    // Raw Materials
+    'Maize bran': { weightInKg: 0 },
+    'Wheat bran': { weightInKg: 0 },
+    'Cob dust': { weightInKg: 0 },
+    'Rice dust': { weightInKg: 0 },
+    // End Products
+    'Maize germ': { weightInKg: 0 },
+    'Wheat bran (finished)': { weightInKg: 0 }
   });
 
   const [showStockForm, setShowStockForm] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState('');
   const [stockInput, setStockInput] = useState('');
-  const [weightInput, setWeightInput] = useState('');
+  const [activeTab, setActiveTab] = useState('rawMaterials');
 
-  // Weight-based categories that we track
-  const weightBasedCategories = ["Maize bran", "Wheat bran", "Maize germ", "Cob dust"];
+  // Define inventory categories
+  const rawMaterials = ["Maize bran", "Wheat bran", "Cob dust", "Rice dust"];
+  const endProducts = ["Maize germ", "Wheat bran (finished)"];
+  const allCategories = [...rawMaterials, ...endProducts];
 
   // Calculate inventory movements from transactions
   const calculateInventoryMovements = () => {
     const movements = {};
     
     // Initialize movements for each product
-    weightBasedCategories.forEach(category => {
+    allCategories.forEach(category => {
       movements[category] = {
         purchases: [],
         sales: [],
-        totalPurchased: 0,
-        totalSold: 0,
         totalPurchasedWeight: 0,
         totalSoldWeight: 0
       };
@@ -34,30 +38,25 @@ const InventoryTracker = ({ transactions = [] }) => {
 
     // Process transactions
     transactions.forEach(transaction => {
-      if (weightBasedCategories.includes(transaction.category)) {
+      if (allCategories.includes(transaction.category)) {
         const category = transaction.category;
-        const quantity = transaction.quantity || 0;
-        const weightPerBag = transaction.weightPerBag || initialStock[category].weightPerBag;
-        const totalWeight = transaction.totalWeight || (quantity * weightPerBag);
+        const weight = transaction.weightInKg || 0;
+        const pricePerKg = transaction.pricePerKg || 0;
 
         const movement = {
           date: transaction.date,
-          quantity: quantity,
-          weightPerBag: weightPerBag,
-          totalWeight: totalWeight,
+          weightInKg: weight,
+          pricePerKg: pricePerKg,
           amount: transaction.amount,
-          pricePerUnit: transaction.pricePerUnit,
           description: transaction.description
         };
 
         if (transaction.type === 'Expense') { // Purchase
           movements[category].purchases.push(movement);
-          movements[category].totalPurchased += quantity;
-          movements[category].totalPurchasedWeight += totalWeight;
+          movements[category].totalPurchasedWeight += weight;
         } else if (transaction.type === 'Income') { // Sale
           movements[category].sales.push(movement);
-          movements[category].totalSold += quantity;
-          movements[category].totalSoldWeight += totalWeight;
+          movements[category].totalSoldWeight += weight;
         }
       }
     });
@@ -69,20 +68,13 @@ const InventoryTracker = ({ transactions = [] }) => {
 
   // Calculate current stock for each product
   const calculateCurrentStock = (category) => {
-    const initial = initialStock[category].quantity;
-    const purchased = movements[category].totalPurchased;
-    const sold = movements[category].totalSold;
+    const initial = initialStock[category].weightInKg;
+    const purchased = movements[category].totalPurchasedWeight;
+    const sold = movements[category].totalSoldWeight;
     const remaining = initial + purchased - sold;
     
-    const initialWeight = initial * initialStock[category].weightPerBag;
-    const purchasedWeight = movements[category].totalPurchasedWeight;
-    const soldWeight = movements[category].totalSoldWeight;
-    const remainingWeight = initialWeight + purchasedWeight - soldWeight;
-    
     return {
-      quantity: remaining,
-      weight: remainingWeight,
-      weightPerBag: initialStock[category].weightPerBag
+      weightInKg: remaining
     };
   };
 
@@ -92,13 +84,10 @@ const InventoryTracker = ({ transactions = [] }) => {
       setInitialStock(prev => ({
         ...prev,
         [selectedProduct]: {
-          ...prev[selectedProduct],
-          quantity: parseFloat(stockInput),
-          weightPerBag: weightInput ? parseFloat(weightInput) : prev[selectedProduct].weightPerBag
+          weightInKg: parseFloat(stockInput)
         }
       }));
       setStockInput('');
-      setWeightInput('');
       setSelectedProduct('');
       setShowStockForm(false);
     }
@@ -121,15 +110,150 @@ const InventoryTracker = ({ transactions = [] }) => {
   };
 
   const getStockStatus = (currentStock) => {
-    if (currentStock.quantity <= 0) return { status: 'Out of Stock', color: '#e74c3c' };
-    if (currentStock.quantity <= 10) return { status: 'Low Stock', color: '#f39c12' };
+    if (currentStock.weightInKg <= 0) return { status: 'Out of Stock', color: '#e74c3c' };
+    if (currentStock.weightInKg <= 100) return { status: 'Low Stock', color: '#f39c12' };
     return { status: 'In Stock', color: '#27ae60' };
+  };
+
+  const renderInventorySection = (categories, title) => {
+    return (
+      <div style={styles.inventorySection}>
+        <h3 style={styles.inventoryTitle}>{title}</h3>
+        
+        {/* Overview Cards */}
+        <div style={styles.overviewGrid}>
+          {categories.map(category => {
+            const currentStock = calculateCurrentStock(category);
+            const stockStatus = getStockStatus(currentStock);
+            
+            return (
+              <div key={category} style={styles.overviewCard}>
+                <h4 style={styles.productName}>{category}</h4>
+                <div style={styles.stockInfo}>
+                  <div style={styles.stockQuantity}>
+                    {currentStock.weightInKg.toFixed(1)} kg
+                  </div>
+                  <div style={{...styles.stockStatus, color: stockStatus.color}}>
+                    {stockStatus.status}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Detailed Tables */}
+        <div style={styles.detailsSection}>
+          {categories.map(category => {
+            const currentStock = calculateCurrentStock(category);
+            const categoryMovements = movements[category];
+            
+            return (
+              <div key={category} style={styles.productSection}>
+                <div style={styles.productHeader}>
+                  <h4 style={styles.productTitle}>{category}</h4>
+                  <div style={styles.currentStockSummary}>
+                    Current Stock: {currentStock.weightInKg.toFixed(1)} kg
+                  </div>
+                </div>
+                
+                <div style={styles.movementTables}>
+                  {/* Purchases Table */}
+                  <div style={styles.tableContainer}>
+                    <h5 style={styles.tableTitle}>Purchases (Stock In)</h5>
+                    {categoryMovements.purchases.length > 0 ? (
+                      <table style={styles.table}>
+                        <thead>
+                          <tr style={styles.tableHeader}>
+                            <th style={styles.th}>Date</th>
+                            <th style={styles.th}>Weight (kg)</th>
+                            <th style={styles.th}>Price/kg</th>
+                            <th style={styles.th}>Total Amount</th>
+                            <th style={styles.th}>Description</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {categoryMovements.purchases.map((purchase, index) => (
+                            <tr key={index} style={styles.tableRow}>
+                              <td style={styles.td}>{formatDate(purchase.date)}</td>
+                              <td style={styles.td}>{purchase.weightInKg.toFixed(1)} kg</td>
+                              <td style={styles.td}>{formatCurrency(purchase.pricePerKg)}</td>
+                              <td style={styles.td}>{formatCurrency(purchase.amount)}</td>
+                              <td style={styles.td}>{purchase.description}</td>
+                            </tr>
+                          ))}
+                          <tr style={styles.totalRow}>
+                            <td style={styles.td}><strong>Total</strong></td>
+                            <td style={styles.td}>
+                              <strong>{categoryMovements.totalPurchasedWeight.toFixed(1)} kg</strong>
+                            </td>
+                            <td style={styles.td}></td>
+                            <td style={styles.td}>
+                              <strong>{formatCurrency(categoryMovements.purchases.reduce((sum, p) => sum + p.amount, 0))}</strong>
+                            </td>
+                            <td style={styles.td}></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    ) : (
+                      <div style={styles.noData}>No purchases recorded</div>
+                    )}
+                  </div>
+
+                  {/* Sales Table */}
+                  <div style={styles.tableContainer}>
+                    <h5 style={styles.tableTitle}>Sales (Stock Out)</h5>
+                    {categoryMovements.sales.length > 0 ? (
+                      <table style={styles.table}>
+                        <thead>
+                          <tr style={styles.tableHeader}>
+                            <th style={styles.th}>Date</th>
+                            <th style={styles.th}>Weight (kg)</th>
+                            <th style={styles.th}>Price/kg</th>
+                            <th style={styles.th}>Total Amount</th>
+                            <th style={styles.th}>Description</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {categoryMovements.sales.map((sale, index) => (
+                            <tr key={index} style={styles.tableRow}>
+                              <td style={styles.td}>{formatDate(sale.date)}</td>
+                              <td style={styles.td}>{sale.weightInKg.toFixed(1)} kg</td>
+                              <td style={styles.td}>{formatCurrency(sale.pricePerKg)}</td>
+                              <td style={styles.td}>{formatCurrency(sale.amount)}</td>
+                              <td style={styles.td}>{sale.description}</td>
+                            </tr>
+                          ))}
+                          <tr style={styles.totalRow}>
+                            <td style={styles.td}><strong>Total</strong></td>
+                            <td style={styles.td}>
+                              <strong>{categoryMovements.totalSoldWeight.toFixed(1)} kg</strong>
+                            </td>
+                            <td style={styles.td}></td>
+                            <td style={styles.td}>
+                              <strong>{formatCurrency(categoryMovements.sales.reduce((sum, s) => sum + s.amount, 0))}</strong>
+                            </td>
+                            <td style={styles.td}></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    ) : (
+                      <div style={styles.noData}>No sales recorded</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
   };
 
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <h2 style={styles.title}>Inventory Management</h2>
+        <h2 style={styles.title}>Dual Inventory Management System</h2>
         <button 
           style={styles.addStockBtn}
           onClick={() => setShowStockForm(true)}
@@ -151,37 +275,30 @@ const InventoryTracker = ({ transactions = [] }) => {
                 style={styles.select}
               >
                 <option value="">Select Product</option>
-                {weightBasedCategories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
+                <optgroup label="Raw Materials">
+                  {rawMaterials.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="End Products">
+                  {endProducts.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </optgroup>
               </select>
             </div>
             
             <div style={styles.formGroup}>
-              <label>
-                {selectedProduct === 'Cob dust' ? 'Quantity (kg):' : 'Quantity (bags):'}
-              </label>
+              <label>Weight (kg):</label>
               <input 
                 type="number" 
+                step="0.01"
                 value={stockInput} 
                 onChange={(e) => setStockInput(e.target.value)}
                 style={styles.input}
-                placeholder="Enter quantity"
+                placeholder="Enter weight in kg"
               />
             </div>
-            
-            {selectedProduct && selectedProduct !== 'Cob dust' && (
-              <div style={styles.formGroup}>
-                <label>Weight per bag (kg):</label>
-                <input 
-                  type="number" 
-                  value={weightInput} 
-                  onChange={(e) => setWeightInput(e.target.value)}
-                  style={styles.input}
-                  placeholder={`Default: ${initialStock[selectedProduct]?.weightPerBag || 0} kg`}
-                />
-              </div>
-            )}
             
             <div style={styles.formButtons}>
               <button onClick={handleAddStock} style={styles.saveBtn}>Save</button>
@@ -191,145 +308,47 @@ const InventoryTracker = ({ transactions = [] }) => {
         </div>
       )}
 
-      {/* Inventory Overview */}
-      <div style={styles.overviewGrid}>
-        {weightBasedCategories.map(category => {
-          const currentStock = calculateCurrentStock(category);
-          const stockStatus = getStockStatus(currentStock);
-          
-          return (
-            <div key={category} style={styles.overviewCard}>
-              <h3 style={styles.productName}>{category}</h3>
-              <div style={styles.stockInfo}>
-                <div style={styles.stockQuantity}>
-                  {currentStock.quantity.toFixed(1)} {category === 'Cob dust' ? 'kg' : 'bags'}
-                </div>
-                <div style={styles.stockWeight}>
-                  {currentStock.weight.toFixed(1)} kg total
-                </div>
-                <div style={{...styles.stockStatus, color: stockStatus.color}}>
-                  {stockStatus.status}
-                </div>
-              </div>
-            </div>
-          );
-        })}
+      {/* Navigation Tabs */}
+      <div style={styles.tabContainer}>
+        <button 
+          style={{
+            ...styles.tab,
+            ...(activeTab === 'rawMaterials' ? styles.activeTab : {})
+          }}
+          onClick={() => setActiveTab('rawMaterials')}
+        >
+          Raw Materials
+        </button>
+        <button 
+          style={{
+            ...styles.tab,
+            ...(activeTab === 'endProducts' ? styles.activeTab : {})
+          }}
+          onClick={() => setActiveTab('endProducts')}
+        >
+          End Products
+        </button>
+        <button 
+          style={{
+            ...styles.tab,
+            ...(activeTab === 'all' ? styles.activeTab : {})
+          }}
+          onClick={() => setActiveTab('all')}
+        >
+          All Inventory
+        </button>
       </div>
 
-      {/* Detailed Inventory Table */}
-      <div style={styles.detailsSection}>
-        <h3 style={styles.sectionTitle}>Detailed Inventory Tracking</h3>
-        
-        {weightBasedCategories.map(category => {
-          const currentStock = calculateCurrentStock(category);
-          const categoryMovements = movements[category];
-          
-          return (
-            <div key={category} style={styles.productSection}>
-              <div style={styles.productHeader}>
-                <h4 style={styles.productTitle}>{category}</h4>
-                <div style={styles.currentStockSummary}>
-                  Current Stock: {currentStock.quantity.toFixed(1)} {category === 'Cob dust' ? 'kg' : 'bags'} 
-                  ({currentStock.weight.toFixed(1)} kg)
-                </div>
-              </div>
-              
-              <div style={styles.movementTables}>
-                {/* Purchases Table */}
-                <div style={styles.tableContainer}>
-                  <h5 style={styles.tableTitle}>Purchases (Stock In)</h5>
-                  {categoryMovements.purchases.length > 0 ? (
-                    <table style={styles.table}>
-                      <thead>
-                        <tr style={styles.tableHeader}>
-                          <th style={styles.th}>Date</th>
-                          <th style={styles.th}>Quantity</th>
-                          <th style={styles.th}>Weight</th>
-                          <th style={styles.th}>Price/Unit</th>
-                          <th style={styles.th}>Total Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {categoryMovements.purchases.map((purchase, index) => (
-                          <tr key={index} style={styles.tableRow}>
-                            <td style={styles.td}>{formatDate(purchase.date)}</td>
-                            <td style={styles.td}>
-                              {purchase.quantity} {category === 'Cob dust' ? 'kg' : 'bags'}
-                            </td>
-                            <td style={styles.td}>{purchase.totalWeight.toFixed(1)} kg</td>
-                            <td style={styles.td}>{formatCurrency(purchase.pricePerUnit)}</td>
-                            <td style={styles.td}>{formatCurrency(purchase.amount)}</td>
-                          </tr>
-                        ))}
-                        <tr style={styles.totalRow}>
-                          <td style={styles.td}><strong>Total</strong></td>
-                          <td style={styles.td}>
-                            <strong>{categoryMovements.totalPurchased.toFixed(1)} {category === 'Cob dust' ? 'kg' : 'bags'}</strong>
-                          </td>
-                          <td style={styles.td}>
-                            <strong>{categoryMovements.totalPurchasedWeight.toFixed(1)} kg</strong>
-                          </td>
-                          <td style={styles.td}></td>
-                          <td style={styles.td}>
-                            <strong>{formatCurrency(categoryMovements.purchases.reduce((sum, p) => sum + p.amount, 0))}</strong>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  ) : (
-                    <div style={styles.noData}>No purchases recorded</div>
-                  )}
-                </div>
-
-                {/* Sales Table */}
-                <div style={styles.tableContainer}>
-                  <h5 style={styles.tableTitle}>Sales (Stock Out)</h5>
-                  {categoryMovements.sales.length > 0 ? (
-                    <table style={styles.table}>
-                      <thead>
-                        <tr style={styles.tableHeader}>
-                          <th style={styles.th}>Date</th>
-                          <th style={styles.th}>Quantity</th>
-                          <th style={styles.th}>Weight</th>
-                          <th style={styles.th}>Price/Unit</th>
-                          <th style={styles.th}>Total Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {categoryMovements.sales.map((sale, index) => (
-                          <tr key={index} style={styles.tableRow}>
-                            <td style={styles.td}>{formatDate(sale.date)}</td>
-                            <td style={styles.td}>
-                              {sale.quantity} {category === 'Cob dust' ? 'kg' : 'bags'}
-                            </td>
-                            <td style={styles.td}>{sale.totalWeight.toFixed(1)} kg</td>
-                            <td style={styles.td}>{formatCurrency(sale.pricePerUnit)}</td>
-                            <td style={styles.td}>{formatCurrency(sale.amount)}</td>
-                          </tr>
-                        ))}
-                        <tr style={styles.totalRow}>
-                          <td style={styles.td}><strong>Total</strong></td>
-                          <td style={styles.td}>
-                            <strong>{categoryMovements.totalSold.toFixed(1)} {category === 'Cob dust' ? 'kg' : 'bags'}</strong>
-                          </td>
-                          <td style={styles.td}>
-                            <strong>{categoryMovements.totalSoldWeight.toFixed(1)} kg</strong>
-                          </td>
-                          <td style={styles.td}></td>
-                          <td style={styles.td}>
-                            <strong>{formatCurrency(categoryMovements.sales.reduce((sum, s) => sum + s.amount, 0))}</strong>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  ) : (
-                    <div style={styles.noData}>No sales recorded</div>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })}
+      {/* Content based on active tab */}
+      <div style={styles.content}>
+        {activeTab === 'rawMaterials' && renderInventorySection(rawMaterials, 'Raw Materials Inventory')}
+        {activeTab === 'endProducts' && renderInventorySection(endProducts, 'End Products Inventory')}
+        {activeTab === 'all' && (
+          <>
+            {renderInventorySection(rawMaterials, 'Raw Materials Inventory')}
+            {renderInventorySection(endProducts, 'End Products Inventory')}
+          </>
+        )}
       </div>
     </div>
   );
@@ -369,6 +388,44 @@ const styles = {
     borderRadius: '5px',
     cursor: 'pointer',
     fontSize: '1rem'
+  },
+  tabContainer: {
+    display: 'flex',
+    backgroundColor: '#ffffff',
+    borderRadius: '8px',
+    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+    marginBottom: '20px',
+    overflow: 'hidden'
+  },
+  tab: {
+    flex: 1,
+    padding: '15px 20px',
+    backgroundColor: '#ecf0f1',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '1rem',
+    color: '#2c3e50',
+    transition: 'all 0.3s ease'
+  },
+  activeTab: {
+    backgroundColor: '#3498db',
+    color: 'white'
+  },
+  content: {
+    minHeight: '400px'
+  },
+  inventorySection: {
+    marginBottom: '30px'
+  },
+  inventoryTitle: {
+    fontSize: '1.4rem',
+    color: '#2c3e50',
+    marginBottom: '20px',
+    padding: '15px 20px',
+    backgroundColor: '#ffffff',
+    borderRadius: '8px',
+    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+    borderLeft: '4px solid #3498db'
   },
   modal: {
     position: 'fixed',
@@ -443,7 +500,7 @@ const styles = {
     minHeight: '120px'
   },
   productName: {
-    fontSize: '1.2rem',
+    fontSize: '1.1rem',
     color: '#2c3e50',
     margin: '0 0 15px 0'
   },
@@ -451,14 +508,9 @@ const styles = {
     textAlign: 'center'
   },
   stockQuantity: {
-    fontSize: '1.5rem',
+    fontSize: '1.4rem',
     fontWeight: 'bold',
     color: '#2c3e50',
-    marginBottom: '5px'
-  },
-  stockWeight: {
-    fontSize: '1rem',
-    color: '#7f8c8d',
     marginBottom: '10px'
   },
   stockStatus: {
@@ -471,11 +523,6 @@ const styles = {
     padding: '20px',
     borderRadius: '8px',
     boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
-  },
-  sectionTitle: {
-    fontSize: '1.5rem',
-    color: '#2c3e50',
-    marginBottom: '20px'
   },
   productSection: {
     marginBottom: '30px',
@@ -494,7 +541,7 @@ const styles = {
     gap: '10px'
   },
   productTitle: {
-    fontSize: '1.3rem',
+    fontSize: '1.2rem',
     color: '#2c3e50',
     margin: 0
   },
