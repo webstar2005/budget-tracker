@@ -12,6 +12,7 @@ import {
 } from './services/database';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from './firebase';
+import InventoryTracker from './Components/InventoryTracker';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -292,6 +293,7 @@ function App() {
       <IncomeExp transactions={transactions} />
       <Footer transactions={transactions} onDelete={deleteTransaction} />
       <BalanceSheet transactions={transactions} />
+      <InventoryTracker transactions={transactions} />
     </div>
   );
 }
