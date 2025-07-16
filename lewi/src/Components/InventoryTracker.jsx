@@ -51,12 +51,46 @@ const InventoryTracker = ({ transactions = [] }) => {
           description: transaction.description
         };
 
-        if (transaction.type === 'Expense') { // Purchase
-          movements[category].purchases.push(movement);
-          movements[category].totalPurchasedWeight += weight;
-        } else if (transaction.type === 'Income') { // Sale
-          movements[category].sales.push(movement);
-          movements[category].totalSoldWeight += weight;
+        // Special handling for wheat bran - it affects both inventories
+        if (category === 'Wheat bran') {
+          // Add to raw materials wheat bran
+          if (transaction.type === 'Expense') { // Purchase
+            movements['Wheat bran'].purchases.push(movement);
+            movements['Wheat bran'].totalPurchasedWeight += weight;
+            // Also add to finished wheat bran
+            movements['Wheat bran (finished)'].purchases.push(movement);
+            movements['Wheat bran (finished)'].totalPurchasedWeight += weight;
+          } else if (transaction.type === 'Income') { // Sale
+            movements['Wheat bran'].sales.push(movement);
+            movements['Wheat bran'].totalSoldWeight += weight;
+            // Also subtract from finished wheat bran
+            movements['Wheat bran (finished)'].sales.push(movement);
+            movements['Wheat bran (finished)'].totalSoldWeight += weight;
+          }
+        } else if (category === 'Wheat bran (finished)') {
+          // If transaction is specifically for finished wheat bran, sync with raw material
+          if (transaction.type === 'Expense') { // Purchase
+            movements['Wheat bran (finished)'].purchases.push(movement);
+            movements['Wheat bran (finished)'].totalPurchasedWeight += weight;
+            // Also add to raw materials wheat bran
+            movements['Wheat bran'].purchases.push(movement);
+            movements['Wheat bran'].totalPurchasedWeight += weight;
+          } else if (transaction.type === 'Income') { // Sale
+            movements['Wheat bran (finished)'].sales.push(movement);
+            movements['Wheat bran (finished)'].totalSoldWeight += weight;
+            // Also subtract from raw materials wheat bran
+            movements['Wheat bran'].sales.push(movement);
+            movements['Wheat bran'].totalSoldWeight += weight;
+          }
+        } else {
+          // Normal processing for other products
+          if (transaction.type === 'Expense') { // Purchase
+            movements[category].purchases.push(movement);
+            movements[category].totalPurchasedWeight += weight;
+          } else if (transaction.type === 'Income') { // Sale
+            movements[category].sales.push(movement);
+            movements[category].totalSoldWeight += weight;
+          }
         }
       }
     });
@@ -72,6 +106,22 @@ const InventoryTracker = ({ transactions = [] }) => {
     const purchased = movements[category].totalPurchasedWeight;
     const sold = movements[category].totalSoldWeight;
     const remaining = initial + purchased - sold;
+    
+    // For wheat bran synchronization - ensure both inventories show the same stock
+    if (category === 'Wheat bran' || category === 'Wheat bran (finished)') {
+      const wheatBranRawInitial = initialStock['Wheat bran'].weightInKg;
+      const wheatBranFinishedInitial = initialStock['Wheat bran (finished)'].weightInKg;
+      const totalInitial = wheatBranRawInitial + wheatBranFinishedInitial;
+      
+      const wheatBranPurchased = movements['Wheat bran'].totalPurchasedWeight;
+      const wheatBranSold = movements['Wheat bran'].totalSoldWeight;
+      
+      const synchronizedRemaining = totalInitial + wheatBranPurchased - wheatBranSold;
+      
+      return {
+        weightInKg: synchronizedRemaining
+      };
+    }
     
     return {
       weightInKg: remaining
